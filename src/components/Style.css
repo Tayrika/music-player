@@ -1,0 +1,74 @@
+:root {
+  --main-color: #27ae60;
+  /* --secondary-color: #afd198; */
+}
+
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body {
+  background: rgb(231,41,124);
+  background: radial-gradient(circle, rgba(231,41,124,0.5508797268907564) 24%, rgba(90,200,87,0.5704875700280112) 65%);
+}
+
+.component {
+  background-color: white;
+  width: 400px;
+  margin: 1rem auto;
+  border-radius: 30px;
+  padding-bottom: 2rem;
+}
+
+.musicCover {
+  border-radius: 10%;
+  width: 250px;
+}
+
+.playButton {
+  background: none;
+  border: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.subtitle {
+  margin-top: -1rem;
+  color: #4f4f4f;
+}
+
+.time {
+  margin: 0 auto;
+  width: 80%;
+  display: flex;
+  justify-content: space-between;
+  color: #121212;
+}
+
+input[type="range"] {
+  width: 80%;
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--main-color);
+  height: 0.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 100%;
+  border: 3px solid #fff;
+  height: 20px;
+  width: 20px;
+  background: var(--main-color);
+  cursor: pointer;
+  box-shadow: 0 2px 4px #121212, 0 0px 1px #0d0d0d;
+}
