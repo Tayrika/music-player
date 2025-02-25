@@ -38,6 +38,11 @@ body {
   justify-content: center;
 }
 
+.playButton:hover {
+  cursor: pointer;
+  color: #92f094;
+}
+
 .subtitle {
   margin-top: -1rem;
   color: #4f4f4f;

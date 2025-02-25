@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { AiFillPlayCircle, AiFillPauseCircle } from "react-icons/ai";
 import { BiSkipNext, BiSkipPrevious } from "react-icons/bi";
@@ -12,22 +12,28 @@ const Player = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [currentTrackDetails, setCurrentTrackDetails] = useState({ artist: '', songTitle: '' });
 
+  // Ref for the audio player
+  const audioRef = useRef(null);
+
+  // Fetch Spotify Access Token on component mount
   useEffect(() => {
-    // Fetch access token
     axios.post('https://accounts.spotify.com/api/token', 
-    'grant_type=client_credentials', 
-    {
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${process.env.REACT_APP_SPOTIFY_CLIENT_ID}:${process.env.REACT_APP_SPOTIFY_CLIENT_SECRET}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }
-    }).then(response => {
-      setAccessToken(response.data.access_token);
-    }).catch(error => {
-      console.log('Error fetching Spotify access token', error);
-    });
+      'grant_type=client_credentials', 
+      {
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${process.env.REACT_APP_SPOTIFY_CLIENT_ID}:${process.env.REACT_APP_SPOTIFY_CLIENT_SECRET}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }
+      })
+      .then(response => {
+        setAccessToken(response.data.access_token);
+      })
+      .catch(error => {
+        console.error('Error fetching Spotify access token', error);
+      });
   }, []);
 
+  // Fetch tracks when access token is available
   useEffect(() => {
     const fetchRandomJazzTracks = async () => {
       try {
@@ -42,64 +48,68 @@ const Player = () => {
               limit: 50,
             }
           });
-  
+
           const tracks = response.data.tracks.items.map(track => ({
-            uri: track.preview_url,
+            uri: track.preview_url,  // short 30-second preview URL
             artist: track.artists[0].name,
             songTitle: track.name,
           })).filter(track => track.uri);
-  
+
           setPlaylist(tracks);
           setCurrentTrackIndex(0);
-          setCurrentTrackDetails({ artist: tracks[0].artist, songTitle: tracks[0].songTitle });
-          setIsPlaying(true); // Automatically start playing the first track
+          setCurrentTrackDetails({
+            artist: tracks[0].artist,
+            songTitle: tracks[0].songTitle,
+          });
         }
       } catch (error) {
         console.error('Error fetching jazz tracks', error);
       }
     };
-  
-    if (!playlist.length) {
+
+    if (accessToken && playlist.length === 0) {
       fetchRandomJazzTracks();
-    } else {
-      // Update current track details when the track index changes
+    }
+  }, [accessToken, playlist.length]);
+
+  // Play track when index changes
+  useEffect(() => {
+    if (playlist.length > 0) {
       const currentTrack = playlist[currentTrackIndex];
       setCurrentTrackDetails({
         artist: currentTrack.artist,
         songTitle: currentTrack.songTitle,
       });
+
+      // Auto-play new track if audioRef exists
+      if (audioRef.current) {
+        audioRef.current.src = currentTrack.uri;
+        audioRef.current.play().catch(error => console.error("Playback error:", error));
+        setIsPlaying(true);
+      }
     }
-  }, [accessToken, currentTrackIndex, playlist]);
-  
+  }, [currentTrackIndex, playlist]);
 
   const playingButton = () => {
-    const audioElement = document.getElementById("audio-player");
-
-    if (!audioElement) {
-      console.error("Audio element not found");
-      return;
-    }
-
-    if (isPlaying) {
-      audioElement.pause();
-      setIsPlaying(false);
-    } else {
-      audioElement.play();
-      setIsPlaying(true);
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(error => console.error("Playback error:", error));
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
   const previousButton = () => {
     if (currentTrackIndex > 0) {
       setCurrentTrackIndex(currentTrackIndex - 1);
-      setIsPlaying(true);
     }
   };
 
   const nextButton = () => {
     if (currentTrackIndex < playlist.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
-      setIsPlaying(true);
     }
   };
 
@@ -119,19 +129,12 @@ const Player = () => {
             <BiSkipPrevious />
           </IconContext.Provider>
         </button>
-        {!isPlaying ? (
-          <button className="playButton" onClick={playingButton}>
+
+        <button className="playButton" onClick={playingButton}>
           <IconContext.Provider value={{size: "3rem", color: "#27AE60"}}>
-            <AiFillPlayCircle />
+            {isPlaying ? <AiFillPauseCircle /> : <AiFillPlayCircle />}
           </IconContext.Provider>
         </button>
-        ) : (
-          <button className="playButton" onClick={playingButton}>
-            <IconContext.Provider value={{size: "3rem", color: "#27AE60"}}>
-              <AiFillPauseCircle />
-            </IconContext.Provider>
-          </button>
-        )}
 
         <button className="playButton" onClick={nextButton}>
           <IconContext.Provider value={{size: "3rem", color: "#27AE60"}}>
@@ -141,9 +144,7 @@ const Player = () => {
       </div>
 
       {/* Render the audio element */}
-      {playlist.length > 0 && (
-        <audio id="audio-player" src={playlist[currentTrackIndex].uri} controls autoPlay />
-      )}
+      <audio ref={audioRef} controls autoPlay />
     </div>
   );
 };
